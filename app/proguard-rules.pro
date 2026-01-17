@@ -1,0 +1,7 @@
+-keep class md.victoriabank.mia.merchant.data.** { *; }
+-keep class md.victoriabank.mia.merchant.api.** { *; }
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes Exceptions
+-keep class com.google.gson.** { *; }
+-keep class org.jose4j.** { *; }

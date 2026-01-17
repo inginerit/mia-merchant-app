@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_generate_qr"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="@string/nav_generate_qr" />
+    
+    <item
+        android:id="@+id/nav_qr_list"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="@string/nav_qr_list" />
+    
+    <item
+        android:id="@+id/nav_reports"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="@string/nav_reports" />
+    
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="@string/nav_settings" />
+</menu>
