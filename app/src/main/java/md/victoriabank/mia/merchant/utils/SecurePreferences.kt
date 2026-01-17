@@ -14,7 +14,11 @@ class SecurePreferences(context: Context) {
             apply()
         }
     }
-    
+    fun hasCredentials(): Boolean {
+    return !getUsername().isNullOrBlank() && 
+           !getPassword().isNullOrBlank() && 
+           !getIban().isNullOrBlank()
+}
     fun getUsername(): String? = prefs.getString("username", null)
     fun getPassword(): String? = prefs.getString("password", null)
     fun getIban(): String? = prefs.getString("iban", null)
