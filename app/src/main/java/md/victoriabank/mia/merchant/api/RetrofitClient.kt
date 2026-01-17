@@ -1,16 +1,9 @@
 package md.victoriabank.mia.merchant.api
 
 import android.content.Context
-import android.util.Log
-import kotlinx.coroutines.runBlocking
-import md.victoriabank.mia.merchant.BuildConfig
 import md.victoriabank.mia.merchant.utils.SecurePreferences
-import okhttp3.Authenticator
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Route
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -20,16 +13,8 @@ class RetrofitClient(private val context: Context) {
     private val securePrefs = SecurePreferences(context)
     
     companion object {
-        private const val TAG = "RetrofitClient"
-        private const val TIMEOUT = 30L
-    }
-
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
-        } else {
-            HttpLoggingInterceptor.Level.NONE
-        }
+        private const val BASE_URL_TEST = "https://test-ipspj.victoriabank.md/"
+        private const val BASE_URL_PROD = "https://ips-api-pj.vb.md/"
     }
 
     private val authInterceptor = Interceptor { chain ->
@@ -44,81 +29,23 @@ class RetrofitClient(private val context: Context) {
         chain.proceed(request)
     }
 
-    private val tokenAuthenticator = object : Authenticator {
-        override fun authenticate(route: Route?, response: okhttp3.Response): Request? {
-            // Dacă primim 401 și avem refresh token, încercăm să reînnoim token-ul
-            if (response.code == 401) {
-                val refreshToken = securePrefs.getRefreshToken()
-                if (refreshToken != null) {
-                    try {
-                        val newToken = runBlocking {
-                            refreshAccessToken(refreshToken)
-                        }
-                        if (newToken != null) {
-                            return response.request.newBuilder()
-                                .header("Authorization", "Bearer $newToken")
-                                .build()
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to refresh token", e)
-                    }
-                }
-            }
-            return null
-        }
-    }
-
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
         .addInterceptor(authInterceptor)
-        .authenticator(tokenAuthenticator)
-        .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
-        .readTimeout(TIMEOUT, TimeUnit.SECONDS)
-        .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private fun getBaseUrl(isTestMode: Boolean): String {
-        return if (isTestMode) {
-            BuildConfig.BASE_URL_TEST
-        } else {
-            BuildConfig.BASE_URL_PROD
-        }
-    }
-
     fun getApi(isTestMode: Boolean = true): VictoriaBankApi {
+        val baseUrl = if (isTestMode) BASE_URL_TEST else BASE_URL_PROD
         return Retrofit.Builder()
-            .baseUrl(getBaseUrl(isTestMode))
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(VictoriaBankApi::class.java)
     }
 
-    private suspend fun refreshAccessToken(refreshToken: String): String? {
-        return try {
-            val response = getApi().getToken(
-                grantType = "refresh_token",
-                refreshToken = refreshToken
-            )
-            if (response.isSuccessful) {
-                response.body()?.let { tokenResponse ->
-                    securePrefs.saveTokens(
-                        accessToken = tokenResponse.accessToken,
-                        refreshToken = tokenResponse.refreshToken,
-                        expiresIn = tokenResponse.expiresIn
-                    )
-                    tokenResponse.accessToken
-                }
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error refreshing token", e)
-            null
-        }
-    }
-
-    // Funcție helper pentru autentificare
     suspend fun authenticate(username: String, password: String): Result<Boolean> {
         return try {
             val response = getApi().getToken(
@@ -134,17 +61,12 @@ class RetrofitClient(private val context: Context) {
                         expiresIn = tokenResponse.expiresIn
                     )
                     Result.success(true)
-                } ?: Result.failure(Exception("Empty response body"))
+                } ?: Result.failure(Exception("Empty response"))
             } else {
-                Result.failure(Exception("Authentication failed: ${response.code()}"))
+                Result.failure(Exception("Auth failed: ${response.code()}"))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Authentication error", e)
             Result.failure(e)
         }
-    }
-
-    fun clearTokens() {
-        securePrefs.clearTokens()
     }
 }
