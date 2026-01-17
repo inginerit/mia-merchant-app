@@ -1,40 +1,39 @@
 package md.victoriabank.mia.merchant.ui
 
 import android.os.Bundle
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import md.victoriabank.mia.merchant.R
-import md.victoriabank.mia.merchant.databinding.ActivityMainBinding
 import md.victoriabank.mia.merchant.ui.fragments.*
 import md.victoriabank.mia.merchant.utils.SecurePreferences
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
     private lateinit var securePrefs: SecurePreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_main)
 
         securePrefs = SecurePreferences(this)
 
-        setupBottomNavigation()
+        val fragmentContainer = findViewById<FrameLayout>(R.id.fragment_container)
+        val bottomNavigation = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+
+        setupBottomNavigation(bottomNavigation)
 
         // Verificăm dacă sunt configurate credențialele
         if (!securePrefs.hasCredentials()) {
-            // Afișăm fragmentul de configurare
             loadFragment(SettingsFragment())
         } else {
-            // Afișăm fragmentul principal (Generate QR)
             loadFragment(GenerateQRFragment())
         }
     }
 
-    private fun setupBottomNavigation() {
-        binding.bottomNavigation.setOnItemSelectedListener { item ->
+    private fun setupBottomNavigation(bottomNavigation: BottomNavigationView) {
+        bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_generate_qr -> {
                     loadFragment(GenerateQRFragment())
