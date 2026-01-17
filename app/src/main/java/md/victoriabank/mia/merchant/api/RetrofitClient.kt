@@ -9,14 +9,13 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 class RetrofitClient(private val context: Context) {
-    
     private val securePrefs = SecurePreferences(context)
     
     companion object {
         private const val BASE_URL_TEST = "https://test-ipspj.victoriabank.md/"
         private const val BASE_URL_PROD = "https://ips-api-pj.vb.md/"
     }
-
+    
     private val authInterceptor = Interceptor { chain ->
         val token = securePrefs.getAccessToken()
         val request = if (token != null && !chain.request().url.encodedPath.contains("/identity/token")) {
@@ -28,14 +27,14 @@ class RetrofitClient(private val context: Context) {
         }
         chain.proceed(request)
     }
-
+    
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
-
+    
     fun getApi(isTestMode: Boolean = true): VictoriaBankApi {
         val baseUrl = if (isTestMode) BASE_URL_TEST else BASE_URL_PROD
         return Retrofit.Builder()
@@ -45,7 +44,7 @@ class RetrofitClient(private val context: Context) {
             .build()
             .create(VictoriaBankApi::class.java)
     }
-
+    
     suspend fun authenticate(username: String, password: String): Result<Boolean> {
         return try {
             val response = getApi().getToken(
@@ -57,7 +56,6 @@ class RetrofitClient(private val context: Context) {
                 response.body()?.let { tokenResponse ->
                     securePrefs.saveTokens(
                         accessToken = tokenResponse.accessToken,
-                        refreshToken = tokenResponse.refreshToken,
                         expiresIn = tokenResponse.expiresIn
                     )
                     Result.success(true)
